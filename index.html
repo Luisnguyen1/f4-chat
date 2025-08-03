@@ -139,7 +139,7 @@
     const db = firebase.database();
 
     let username = "";
-    document.getElementById(chatInput).addEventListener("keydown", function(event) {
+    document.getElementById("chatInput").addEventListener("keydown", function(event) {
       if (event.key === "Enter") {
         event.preventDefault();
         if(document.getElementById(chatInput).value.trim() || document.getElementById(imageInput).files.length > 0){
