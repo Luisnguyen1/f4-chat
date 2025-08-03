@@ -139,6 +139,16 @@
     const db = firebase.database();
 
     let username = "";
+    document.getElementById(chatInput).addEventListener("keydown", function(event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        if(document.getElementById(chatInput).value.trim() || document.getElementById(imageInput).files.length > 0){
+          sendMessage();
+        } else {
+          alert("Vui lòng nhập tin nhắn hoặc chọn ảnh để gửi.");
+        }
+      }
+    });
 
     function enterChat() {
       const input = document.getElementById("usernameInput").value.trim();
