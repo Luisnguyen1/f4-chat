@@ -92,8 +92,7 @@
     }
 
     input[type="file"] {
-      padding: 6px;
-      font-size: 14px;
+      display: none;
     }
 
     @media (max-width: 600px) {
@@ -105,23 +104,78 @@
         font-size: 14px;
       }
     }
+    .sidebar { width: 240px; background: #fff; border-right: 1px solid #ccc; padding: 10px; overflow-y: auto; }
+    .dropdown {
+      position: relative;
+    }
+
+    #dropdownToggle {
+      background-color: #eee;
+      border: 1px solid #ccc;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    .dropdown-menu {
+      display: none;
+      position: absolute;
+      top: 40px;
+      left: 0;
+      background-color: white;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      z-index: 10;
+      min-width: 160px;
+      flex-direction: column;
+    }
+
+    .dropdown-menu button {
+      background: none;
+      border: none;
+      padding: 10px 15px;
+      width: 100%;
+      text-align: left;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .dropdown-menu button:hover {
+      background-color: #f0f0f0;
+    }
+
   </style>
 </head>
 <body>
-  <!--model-->
-  <div id="loginScreen">
-    <h2>💬 Nhập tên người dùng</h2>
-    <input type="text" id="usernameInput" placeholder="Tên của bạn..." />
-    <button onclick="enterChat()">Vào chat</button>
+  <!--model: menu-->
+  <div class="sidebar">
+    <div></div>
+    <h5>Các cuộc trò chuyện</h5>
+      <button class="btn btn-outline-success w-100" data-bs-toggle="modal" datab-bs-taret="#"><!--Phần để tài khoản--></button>
+      <button class="btn btn-outline-primary w-100 mb-2" data-bs-toggle="modal" data-bs-target="#addChatModal">➕ Thêm cuộc trò chuyện</button>
+      <button class="btn btn-outline-success w-100" data-bs-toggle="modal" data-bs-target="#createChatModal">📁 Tạo cuộc trò chuyện</button>
+    <div id="chatLít"></div>
   </div>
 
-  <div id="chatScreen">
+  <div id="chatScreen" style="display: flex;">
     <div id="messages"></div>
     <div id="inputArea">
+      <div class="dropdown">
+        <button id="dropdownToggle">+</button>
+        <div class="dropdown-menu" id="dropdownMenu">
+          <button onclick="changeUsername()">✏️ Đổi tên hiển thị</button>
+          <button onclick="removeImage()">🧹 Xóa ảnh đã chọn</button>
+        </div>
+      </div>
+      <label for="imageInput">📷</label>
+      <input type="file" id="imageInput" multiple accept="image/*, video/*"/>
       <input type="text" id="chatInput" placeholder="Nhắn gì đó..." />
-      <input type="file" id="imageInput" />
       <button id="sendBtn" onclick="sendMessage()">Gửi</button>
     </div>
+
     <div id="imagePreview"></div>
   </div>
 
@@ -135,31 +189,38 @@
       messagingSenderId: "959507085021",
       appId: "1:959507085021:web:755901093c2c81d0fb4d34",
     };
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let username = "";
-    document.getElementById("chatInput").addEventListener("keydown", function(event) {
-      if (event.key === "Enter") {
-        event.preventDefault();
-        if(document.getElementById("chatInput").value.trim() || document.getElementById("imageInput").files.length > 0){
-          sendMessage();
-        } else {
-          alert("Vui lòng nhập tin nhắn hoặc chọn ảnh để gửi.");
-        }
-      }
-    });
+    let username = "Guest";
 
-    function enterChat() {
-      const input = document.getElementById("usernameInput").value.trim();
-      if (input) {
-        username = input;
-        document.getElementById("loginScreen").style.display = "none";
-        document.getElementById("chatScreen").style.display = "flex";
-        listenMessages();
-      }
+    // 🟢 Nhận tin nhắn real-time từ Firebase
+    function listenMessages() {
+      const messagesDiv = document.getElementById("messages");
+      db.ref("messages").on("value", (snapshot) => {
+        const data = snapshot.val();
+        messagesDiv.innerHTML = "";
+        for (let id in data) {
+          const msg = data[id];
+          const div = document.createElement("div");
+          div.classList.add("message");
+          div.classList.add(msg.name === username ? "me" : "other");
+          div.innerHTML = `<b>${msg.name}</b><br>${msg.text || ""}`;
+          if (msg.image) {
+            const img = document.createElement("img");
+            img.src = msg.image;
+            img.style.maxWidth = "100%";
+            img.style.marginTop = "5px";
+            div.appendChild(img);
+          }
+          messagesDiv.appendChild(div);
+          messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+      });
     }
 
+    // 🟡 Gửi tin nhắn và ảnh
     async function sendMessage() {
       const chatInput = document.getElementById("chatInput");
       const imageInput = document.getElementById("imageInput");
@@ -194,32 +255,6 @@
       sendBtn.textContent = "Gửi";
     }
 
-    function listenMessages() {
-      const messagesDiv = document.getElementById("messages");
-      db.ref("messages").on("value", (snapshot) => {
-        const data = snapshot.val();
-        messagesDiv.innerHTML = "";
-        for (let id in data) {
-          const msg = data[id];
-          const div = document.createElement("div");
-          div.classList.add("message");
-          div.classList.add(msg.name === username ? "me" : "other");
-
-          div.innerHTML = `<b>${msg.name}</b><br>${msg.text || ""}`;
-          if (msg.image) {
-            const img = document.createElement("img");
-            img.src = msg.image;
-            img.style.maxWidth = "100%";
-            img.style.marginTop = "5px";
-            div.appendChild(img);
-          }
-
-          messagesDiv.appendChild(div);
-          messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }
-      });
-    }
-
     function toBase64(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -230,7 +265,7 @@
     }
 
     async function uploadToImgbb(base64) {
-      const apiKey = "eb64cc8f94a115e3a412694f2a0f10b3"; // thay bằng API Key của bạn nếu có
+      const apiKey = "eb64cc8f94a115e3a412694f2a0f10b3"; // Nếu có key khác, hãy thay tại đây
       const formData = new FormData();
       formData.append("key", apiKey);
       formData.append("image", base64);
@@ -243,11 +278,13 @@
         const result = await res.json();
         return result.data.url;
       } catch (e) {
+        console.error("Upload lỗi:", e);
         alert("Lỗi khi upload ảnh");
         return "";
       }
     }
 
+    // 🟢 Preview ảnh
     document.getElementById("imageInput").addEventListener("change", function() {
       const file = this.files[0];
       const preview = document.getElementById("imagePreview");
@@ -261,6 +298,30 @@
         preview.innerHTML = "";
       }
     });
+
+    // 🟢 Gửi khi nhấn Enter
+    document.getElementById("chatInput").addEventListener("keydown", function(event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        if (document.getElementById("chatInput").value.trim() || document.getElementById("imageInput").files.length > 0) {
+          sendMessage();
+        } else {
+          alert("Vui lòng nhập tin nhắn hoặc chọn ảnh để gửi.");
+        }
+      }
+    });
+
+    // 🟢 Bắt đầu chat khi mở trang
+    window.onload = function () {
+      // Gắn biến tên người dùng nếu có input, còn không thì giữ Guest
+      const input = document.getElementById("usernameInput");
+      if (input && input.value.trim()) {
+        username = input.value.trim();
+      }
+      document.getElementById("chatScreen").style.display = "flex";
+      listenMessages();
+    };
   </script>
+
 </body>
 </html>
