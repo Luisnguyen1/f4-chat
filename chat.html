@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Giao diện chat đẹp</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4f6f8;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    #loginScreen {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      flex-direction: column;
+    }
+    #loginScreen input, #inputArea input[type="text"] {
+      padding: 12px;
+      width: 300px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+      margin-bottom: 12px;
+    }
+    #loginScreen button, #sendBtn {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    #chatScreen {
+      display: none;
+      height: 100vh;
+      flex-direction: column;
+      max-width: 600px;
+      margin: 0 auto;
+      background: #fff;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      border-radius: 12px;
+    }
+
+    #messages {
+      flex: 1;
+      padding: 15px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    .message {
+      padding: 10px 14px;
+      margin: 5px 0;
+      border-radius: 12px;
+      max-width: 70%;
+      word-wrap: break-word;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .me {
+      align-self: flex-end;
+      background: #dcf8c6;
+    }
+    .other {
+      align-self: flex-start;
+      background: #fff;
+    }
+    #inputArea {
+      display: flex;
+      padding: 10px;
+      background: #fff;
+      border-top: 1px solid #ccc;
+      gap: 8px;
+    }
+    #inputArea input[type="text"] {
+      flex: 1;
+    }
+    #imagePreview img {
+      max-width: 100px;
+      margin-top: 5px;
+      border-radius: 8px;
+    }
+
+    input[type="file"] {
+      padding: 6px;
+      font-size: 14px;
+    }
+
+    @media (max-width: 600px) {
+      #loginScreen input {
+        width: 90%;
+      }
+      .message {
+        max-width: 90%;
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!--model-->
+  <div id="loginScreen">
+    <h2>💬 Nhập tên người dùng</h2>
+    <input type="text" id="usernameInput" placeholder="Tên của bạn..." />
+    <button onclick="enterChat()">Vào chat</button>
+  </div>
+
+  <div id="chatScreen">
+    <div id="messages"></div>
+    <div id="inputArea">
+      <input type="text" id="chatInput" placeholder="Nhắn gì đó..." />
+      <input type="file" id="imageInput" />
+      <button id="sendBtn" onclick="sendMessage()">Gửi</button>
+    </div>
+    <div id="imagePreview"></div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDN6tU7Ln3JgeFP7jTprAjSgXDfzunDGQI",
+      authDomain: "gay-db7b1.firebaseapp.com",
+      databaseURL: "https://gay-db7b1-default-rtdb.firebaseio.com",
+      projectId: "gay-db7b1",
+      storageBucket: "gay-db7b1.appspot.com",
+      messagingSenderId: "959507085021",
+      appId: "1:959507085021:web:755901093c2c81d0fb4d34",
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let username = "";
+    document.getElementById("chatInput").addEventListener("keydown", function(event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        if(document.getElementById("chatInput").value.trim() || document.getElementById("imageInput").files.length > 0){
+          sendMessage();
+        } else {
+          alert("Vui lòng nhập tin nhắn hoặc chọn ảnh để gửi.");
+        }
+      }
+    });
+
+    function enterChat() {
+      const input = document.getElementById("usernameInput").value.trim();
+      if (input) {
+        username = input;
+        document.getElementById("loginScreen").style.display = "none";
+        document.getElementById("chatScreen").style.display = "flex";
+        listenMessages();
+      }
+    }
+
+    async function sendMessage() {
+      const chatInput = document.getElementById("chatInput");
+      const imageInput = document.getElementById("imageInput");
+      const sendBtn = document.getElementById("sendBtn");
+
+      let msg = chatInput.value.trim();
+      const file = imageInput.files[0];
+
+      if (!msg && !file) return;
+
+      sendBtn.disabled = true;
+      sendBtn.textContent = "Đang gửi...";
+
+      let imageUrl = "";
+      if (file) {
+        const base64 = await toBase64(file);
+        imageUrl = await uploadToImgbb(base64);
+      }
+
+      const messageData = {
+        name: username,
+        text: msg,
+        image: imageUrl,
+        time: Date.now()
+      };
+
+      db.ref("messages").push(messageData);
+      chatInput.value = "";
+      imageInput.value = "";
+      document.getElementById("imagePreview").innerHTML = "";
+      sendBtn.disabled = false;
+      sendBtn.textContent = "Gửi";
+    }
+
+    function listenMessages() {
+      const messagesDiv = document.getElementById("messages");
+      db.ref("messages").on("value", (snapshot) => {
+        const data = snapshot.val();
+        messagesDiv.innerHTML = "";
+        for (let id in data) {
+          const msg = data[id];
+          const div = document.createElement("div");
+          div.classList.add("message");
+          div.classList.add(msg.name === username ? "me" : "other");
+
+          div.innerHTML = `<b>${msg.name}</b><br>${msg.text || ""}`;
+          if (msg.image) {
+            const img = document.createElement("img");
+            img.src = msg.image;
+            img.style.maxWidth = "100%";
+            img.style.marginTop = "5px";
+            div.appendChild(img);
+          }
+
+          messagesDiv.appendChild(div);
+          messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+      });
+    }
+
+    function toBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function uploadToImgbb(base64) {
+      const apiKey = "eb64cc8f94a115e3a412694f2a0f10b3"; // thay bằng API Key của bạn nếu có
+      const formData = new FormData();
+      formData.append("key", apiKey);
+      formData.append("image", base64);
+
+      try {
+        const res = await fetch("https://api.imgbb.com/1/upload", {
+          method: "POST",
+          body: formData
+        });
+        const result = await res.json();
+        return result.data.url;
+      } catch (e) {
+        alert("Lỗi khi upload ảnh");
+        return "";
+      }
+    }
+
+    document.getElementById("imageInput").addEventListener("change", function() {
+      const file = this.files[0];
+      const preview = document.getElementById("imagePreview");
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          preview.innerHTML = `<img src="${reader.result}" />`;
+        };
+        reader.readAsDataURL(file);
+      } else {
+        preview.innerHTML = "";
+      }
+    });
+  </script>
+</body>
+</html>
