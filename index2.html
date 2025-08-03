@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chat App with Auth</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet" />
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Roboto', sans-serif;
+    }
+    body {
+      margin: 0;
+      background: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      width: 100%;
+      max-width: 500px;
+      background: white;
+      padding: 1rem;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .hidden { display: none; }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 1rem;
+    }
+    input {
+      padding: 10px;
+      margin-top: 4px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    button {
+      padding: 10px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .chat-box {
+      height: 300px;
+      overflow-y: auto;
+      margin-bottom: 10px;
+      background: #f9f9f9;
+      padding: 10px;
+      border-radius: 6px;
+    }
+    .message {
+      margin: 5px 0;
+      max-width: 80%;
+      padding: 8px 12px;
+      border-radius: 12px;
+      clear: both;
+    }
+    .mine {
+      background-color: #d2f8d2;
+      float: right;
+    }
+    .other {
+      background-color: #f0d4d4;
+      float: left;
+    }
+    .switch {
+      text-align: center;
+      margin-top: 1rem;
+    }
+    .google-btn {
+      background-color: #4285f4;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div id="auth-section">
+      <h2 id="auth-title">Đăng nhập</h2>
+      <form id="login-form">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="login-email" required />
+        </div>
+        <div class="form-group">
+          <label>Mật khẩu</label>
+          <input type="password" id="login-password" required />
+        </div>
+        <button type="submit">Đăng nhập</button>
+        <button type="button" class="google-btn" id="google-login">Đăng nhập với Google</button>
+      </form>
+
+      <form id="register-form" class="hidden">
+        <div class="form-group">
+          <label>Tên tài khoản</label>
+          <input type="text" id="register-username" required />
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="register-email" required />
+        </div>
+        <div class="form-group">
+          <label>Mật khẩu</label>
+          <input type="password" id="register-password" required />
+        </div>
+        <button type="submit">Đăng ký</button>
+      </form>
+
+      <div class="switch">
+        <a href="#" id="toggle-auth">Chưa có tài khoản? Đăng ký</a>
+      </div>
+    </div>
+
+    <div id="chat-section" class="hidden">
+      <h2>Xin chào, <span id="display-name"></span></h2>
+      <div class="chat-box" id="chat-box"></div>
+      <div class="form-group">
+        <input type="text" id="chat-input" placeholder="Nhập tin nhắn..." />
+        <button onclick="sendMessage()">Gửi</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDN6tU7Ln3JgeFP7jTprAjSgXDfzunDGQI",
+      authDomain: "gay-db7b1.firebaseapp.com",
+      databaseURL: "https://gay-db7b1-default-rtdb.firebaseio.com",
+      projectId: "gay-db7b1",
+      storageBucket: "gay-db7b1.appspot.com",
+      messagingSenderId: "959507085021",
+      appId: "1:959507085021:web:755901093c2c81d0fb4d34",
+      measurementId: "G-1900F4D48J"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    const loginForm = document.getElementById("login-form");
+    const registerForm = document.getElementById("register-form");
+    const toggleAuth = document.getElementById("toggle-auth");
+    const authTitle = document.getElementById("auth-title");
+
+    toggleAuth.addEventListener("click", () => {
+      loginForm.classList.toggle("hidden");
+      registerForm.classList.toggle("hidden");
+      authTitle.textContent = loginForm.classList.contains("hidden") ? "Đăng ký" : "Đăng nhập";
+      toggleAuth.textContent = loginForm.classList.contains("hidden") ? "Đã có tài khoản? Đăng nhập" : "Chưa có tài khoản? Đăng ký";
+    });
+
+    registerForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const username = document.getElementById("register-username").value;
+      const email = document.getElementById("register-email").value;
+      const password = document.getElementById("register-password").value;
+      auth.createUserWithEmailAndPassword(email, password).then(userCredential => {
+        return userCredential.user.updateProfile({ displayName: username });
+      }).then(() => {
+        document.getElementById("display-name").textContent = auth.currentUser.displayName;
+        showChat();
+      }).catch(error => alert(error.message));
+    });
+
+    loginForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const email = document.getElementById("login-email").value;
+      const password = document.getElementById("login-password").value;
+      auth.signInWithEmailAndPassword(email, password).then(() => {
+        document.getElementById("display-name").textContent = auth.currentUser.displayName || auth.currentUser.email;
+        showChat();
+      }).catch(error => alert(error.message));
+    });
+
+    document.getElementById("google-login").addEventListener("click", () => {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider).then(() => {
+        document.getElementById("display-name").textContent = auth.currentUser.displayName;
+        showChat();
+      }).catch(error => alert(error.message));
+    });
+
+    function showChat() {
+      document.getElementById("auth-section").classList.add("hidden");
+      document.getElementById("chat-section").classList.remove("hidden");
+    }
+
+    function sendMessage() {
+      const input = document.getElementById("chat-input");
+      const text = input.value.trim();
+      if (!text) return;
+      db.ref("messages").push({
+        name: auth.currentUser.displayName || auth.currentUser.email,
+        text: text,
+        uid: auth.currentUser.uid,
+        timestamp: Date.now()
+      });
+      input.value = "";
+    }
+
+    const chatBox = document.getElementById("chat-box");
+    db.ref("messages").on("child_added", snapshot => {
+      const msg = snapshot.val();
+      const div = document.createElement("div");
+      div.className = "message " + (msg.uid === auth.currentUser?.uid ? "mine" : "other");
+      div.innerHTML = `<strong>${msg.name}:</strong> ${msg.text}`;
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    });
+  </script>
+</body>
+
+</html>
