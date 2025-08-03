@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chat Realtime + Menu</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4f6f8;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    #chatScreen {
+      display: flex;
+      flex-direction: column;
+      height: 90vh;
+      width: 100%;
+      max-width: 600px;
+      background: #fff;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    #messages {
+      flex: 1;
+      padding: 15px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .message {
+      padding: 10px 14px;
+      margin: 5px 0;
+      border-radius: 12px;
+      max-width: 70%;
+      word-wrap: break-word;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .me {
+      align-self: flex-end;
+      background: #dcf8c6;
+    }
+
+    .other {
+      align-self: flex-start;
+      background: #fff;
+    }
+
+    #inputArea {
+      display: flex;
+      padding: 10px;
+      background: #fff;
+      border-top: 1px solid #ccc;
+      gap: 8px;
+      align-items: center;
+    }
+
+    #inputArea input[type="text"] {
+      flex: 1;
+      padding: 10px;
+      border-radius: 20px;
+      border: 1px solid #ccc;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    #sendBtn {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    label[for="imageInput"] {
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    #imagePreview {
+      padding: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      border-top: 1px solid #ccc;
+      background: #fafafa;
+    }
+
+    #imagePreview img {
+      max-width: 80px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    /* Dropdown menu styling */
+    .dropdown {
+      position: relative;
+    }
+
+    #menuToggle {
+      background: #ddd;
+      border: none;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+    }
+
+    .dropdown-menu {
+      display: none;
+      position: absolute;
+      bottom: 38px; /* xổ lên */
+      right: 0;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      z-index: 999;
+    }
+
+
+    .dropdown-menu button {
+      background: none;
+      border: none;
+      padding: 8px 12px;
+      width: 100%;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .dropdown-menu button:hover {
+      background: #f2f2f2;
+    }
+
+    @media (max-width: 600px) {
+      #inputArea input[type="text"] {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="chatScreen">
+    <div id="messages"></div>
+    <div id="imagePreview"></div>
+
+    <div id="inputArea">
+      <label for="imageInput">📷</label>
+      <input type="file" id="imageInput" multiple accept="image/*">
+      
+      <div class="dropdown">
+        <button id="menuToggle">☰</button>
+        <div class="dropdown-menu" id="dropdownMenu">
+          <button onclick="changeUsername()">✏️ Đổi tên</button>
+          <button onclick="removeImage()">🧹 Xóa ảnh đã chọn</button>
+        </div>
+      </div>
+
+      <input type="text" id="chatInput" placeholder="Nhắn gì đó..." />
+      <button id="sendBtn" onclick="sendMessage()">Gửi</button>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDN6tU7Ln3JgeFP7jTprAjSgXDfzunDGQI",
+      authDomain: "gay-db7b1.firebaseapp.com",
+      databaseURL: "https://gay-db7b1-default-rtdb.firebaseio.com",
+      projectId: "gay-db7b1",
+      storageBucket: "gay-db7b1.appspot.com",
+      messagingSenderId: "959507085021",
+      appId: "1:959507085021:web:755901093c2c81d0fb4d34",
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    let username = "Guest";
+
+    // Dropdown toggle
+    document.getElementById("menuToggle").addEventListener("click", () => {
+      const menu = document.getElementById("dropdownMenu");
+      menu.style.display = menu.style.display === "block" ? "none" : "block";
+    });
+
+    function changeUsername() {
+      const name = prompt("Nhập tên hiển thị:");
+      if (name && name.trim()) {
+        username = name.trim();
+        alert("✅ Đã đổi tên thành: " + username);
+      }
+      document.getElementById("dropdownMenu").style.display = "none";
+    }
+
+    function removeImage() {
+      document.getElementById("imageInput").value = "";
+      document.getElementById("imagePreview").innerHTML = "";
+      document.getElementById("dropdownMenu").style.display = "none";
+    }
+
+    async function sendMessage() {
+      const chatInput = document.getElementById("chatInput");
+      const imageInput = document.getElementById("imageInput");
+      const sendBtn = document.getElementById("sendBtn");
+
+      const msg = chatInput.value.trim();
+      const files = imageInput.files;
+
+      if (!msg && files.length === 0) return;
+
+      sendBtn.disabled = true;
+      sendBtn.textContent = "Đang gửi...";
+
+      const updates = [];
+
+      if (msg) {
+        updates.push({
+          name: username,
+          text: msg,
+          image: "",
+          time: Date.now()
+        });
+      }
+
+      for (const file of files) {
+        const base64 = await toBase64(file);
+        const imageUrl = await uploadToImgbb(base64);
+        updates.push({
+          name: username,
+          text: "",
+          image: imageUrl,
+          time: Date.now()
+        });
+      }
+
+      for (const item of updates) {
+        await db.ref("messages").push(item);
+      }
+
+      chatInput.value = "";
+      imageInput.value = "";
+      document.getElementById("imagePreview").innerHTML = "";
+      sendBtn.disabled = false;
+      sendBtn.textContent = "Gửi";
+    }
+
+    function toBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function uploadToImgbb(base64) {
+      const apiKey = "eb64cc8f94a115e3a412694f2a0f10b3";
+      const formData = new FormData();
+      formData.append("key", apiKey);
+      formData.append("image", base64);
+
+      try {
+        const res = await fetch("https://api.imgbb.com/1/upload", {
+          method: "POST",
+          body: formData
+        });
+        const result = await res.json();
+        return result.data.url;
+      } catch (e) {
+        alert("Lỗi upload ảnh!");
+        return "";
+      }
+    }
+
+    function listenMessages() {
+      const messagesDiv = document.getElementById("messages");
+      db.ref("messages").on("value", (snapshot) => {
+        const data = snapshot.val();
+        messagesDiv.innerHTML = "";
+        for (let id in data) {
+          const msg = data[id];
+          const div = document.createElement("div");
+          div.classList.add("message");
+          div.classList.add(msg.name === username ? "me" : "other");
+          div.innerHTML = `<b>${msg.name}</b><br>`;
+
+          if (msg.text) {
+            div.innerHTML += `<span>${msg.text}</span><br>`;
+          }
+
+          if (msg.image) {
+            div.innerHTML += `
+              <a href="${msg.image}" target="_blank">
+                <img src="${msg.image}" />
+              </a>
+            `;
+          }
+
+          messagesDiv.appendChild(div);
+          messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+      });
+    }
+
+    document.getElementById("imageInput").addEventListener("change", function() {
+      const files = this.files;
+      const preview = document.getElementById("imagePreview");
+      preview.innerHTML = "";
+      for (const file of files) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = document.createElement("img");
+          img.src = reader.result;
+          preview.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    document.getElementById("chatInput").addEventListener("keydown", function(event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        sendMessage();
+      }
+    });
+
+    window.onload = function () {
+      listenMessages();
+    };
+  </script>
+</body>
+</html>
