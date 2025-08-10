@@ -188,13 +188,6 @@
       transform: translateX(0);
     }
 
-    .container {
-      flex: 1;
-      display: flex;
-      position: relative;
-      overflow: hidden;
-    }
-
     .chat-list {
       list-style: none;
       padding: 0;
@@ -216,14 +209,12 @@
   <header>
     <button id="menuBtn" onclick="toggleSidebar()">☰</button>
   </header>
-  <div class="container">
     <div class="sidebar" id="sidebar">
-      <ul class="chat-list">
-        <li>s</li>
-        <li>s</li>
-      </ul>
+        <ul class="chat-list" id="chbtx">
+            <li>s</li>
+            <li>s</li>
+        </ul>
     </div>
-  </div>
   <div id="chatScreen">
     <div id="messages"></div>
     <div id="imagePreview"></div>
@@ -418,6 +409,14 @@
     function toggleSidebar() {
       sidebar.classList.toggle('show');
     }
+
+    // Đóng sidebar khi click vào bất kỳ li trong #chbtx
+    document.querySelectorAll("#chbtx li").forEach(li => {
+        li.addEventListener("click", () => {
+            sidebar.classList.remove("show");
+        });
+    });
+
   </script>
 </body>
 </html>
