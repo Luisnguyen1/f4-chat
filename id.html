@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Tìm User theo Tên hoặc Email (Firebase)</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #74ABE2, #5563DE);
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .container {
+      background: white;
+      padding: 25px;
+      border-radius: 15px;
+      width: 420px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+      text-align: center;
+    }
+    h2 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+    .search-box {
+      display: flex;
+      gap: 10px;
+    }
+    input {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      outline: none;
+      transition: 0.3s;
+    }
+    input:focus {
+      border-color: #5563DE;
+      box-shadow: 0 0 5px rgba(85, 99, 222, 0.5);
+    }
+    button {
+      padding: 10px 15px;
+      background: #5563DE;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: #3b47b3;
+    }
+    #result {
+      margin-top: 20px;
+      text-align: left;
+    }
+    .user-card {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      transition: 0.3s;
+    }
+    .user-card:hover {
+      transform: scale(1.02);
+      background: #eef1ff;
+    }
+    .error {
+      color: red;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🔍 Tìm User</h2>
+    <div class="search-box">
+      <input type="text" id="searchValue" placeholder="Nhập Tên hoặc Email">
+      <button onclick="findUser()">Tìm</button>
+    </div>
+    <div id="result"></div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCERsSDmnicIJ2HFGfSDSWR4dF89JsVt0g",
+      authDomain: "minh-project-44548.firebaseapp.com",
+      databaseURL: "https://minh-project-44548-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "minh-project-44548",
+      storageBucket: "minh-project-44548.firebasestorage.app",
+      messagingSenderId: "717104512164",
+      appId: "1:717104512164:web:d43a26cb292ae153e57a31",
+      measurementId: "G-GRKEN1PSPQ"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    function findUser() {
+      const input = document.getElementById('searchValue').value.trim();
+      const resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = "";
+
+      if (!input) {
+        resultDiv.innerHTML = "<p class='error'>⚠ Vui lòng nhập tên hoặc email!</p>";
+        return;
+      }
+
+      // Tìm theo tên trước
+      db.ref('users')
+        .orderByChild('name')
+        .equalTo(input)
+        .once('value')
+        .then(snapshot => {
+          if (snapshot.exists()) {
+            snapshot.forEach(childSnap => {
+              resultDiv.innerHTML += renderUserCard(childSnap.val());
+            });
+          } else {
+            // Nếu không có tên, tìm theo email
+            db.ref('users')
+              .orderByChild('email')
+              .equalTo(input)
+              .once('value')
+              .then(emailSnap => {
+                if (emailSnap.exists()) {
+                  emailSnap.forEach(childSnap => {
+                    resultDiv.innerHTML += renderUserCard(childSnap.val());
+                  });
+                } else {
+                  resultDiv.innerHTML = "<p class='error'>❌ Không tìm thấy user!</p>";
+                }
+              });
+          }
+        })
+        .catch(error => {
+          console.error(error);
+          resultDiv.innerHTML = "<p class='error'>🚫 Lỗi khi lấy dữ liệu!</p>";
+        });
+    }
+
+    function renderUserCard(data) {
+      return `
+        <div class="user-card">
+          <p><strong>Tên:</strong> ${data.name}</p>
+          <p><strong>Email:</strong> ${data.email}</p>
+        </div>
+      `;
+    }
+  </script>
+</body>
+</html>
