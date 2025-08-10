@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Tìm User qua ID (Firebase)</title>
+</head>
+<body>
+  <h2>Tìm User qua ID</h2>
+  <input type="text" id="userId" placeholder="Nhập ID người dùng">
+  <button onclick="findUser()">Tìm</button>
+  
+  <div id="result"></div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+  <script>
+    // Cấu hình Firebase của bạn
+    const firebaseConfig = {
+      apiKey: "AIzaSyCERsSDmnicIJ2HFGfSDSWR4dF89JsVt0g",
+      authDomain: "minh-project-44548.firebaseapp.com",
+      databaseURL: "https://minh-project-44548-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "minh-project-44548",
+      storageBucket: "minh-project-44548.firebasestorage.app",
+      messagingSenderId: "717104512164",
+      appId: "1:717104512164:web:d43a26cb292ae153e57a31",
+      measurementId: "G-GRKEN1PSPQ"
+    };
+
+    // Khởi tạo Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    function findUser() {
+      const id = document.getElementById('userId').value.trim();
+      const resultDiv = document.getElementById('result');
+
+      if (!id) {
+        resultDiv.innerHTML = "<p style='color:red'>Vui lòng nhập ID!</p>";
+        return;
+      }
+
+      // Lấy dữ liệu từ Firebase
+      firebase.database().ref('users/' + id).once('value')
+        .then(snapshot => {
+          if (snapshot.exists()) {
+            const data = snapshot.val();
+            resultDiv.innerHTML = `
+              <p><strong>ID:</strong> ${id}</p>
+              <p><strong>Tên:</strong> ${data.name}</p>
+              <p><strong>Email:</strong> ${data.email}</p>
+            `;
+          } else {
+            resultDiv.innerHTML = "<p style='color:red'>Không tìm thấy user!</p>";
+          }
+        })
+        .catch(error => {
+          console.error(error);
+          resultDiv.innerHTML = "<p style='color:red'>Lỗi khi lấy dữ liệu!</p>";
+        });
+    }
+  </script>
+</body>
+</html>
