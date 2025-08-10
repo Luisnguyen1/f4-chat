@@ -393,6 +393,7 @@ function createRoomListItem(roomId, room) {
   const roomList = document.getElementById("room-list");
   const roomItem = document.createElement("div");
   roomItem.className = `room-item ${roomId === currentRoomId ? 'active' : ''}`;
+  roomItem.dataset.roomId = roomId;
   roomItem.onclick = () => switchToRoom(roomId, room.name);
   
   roomItem.innerHTML = `
@@ -414,9 +415,9 @@ function switchToRoom(roomId, roomName) {
     item.classList.remove("active");
   });
   
-  // Find and activate current room
+  // Find and activate current room by checking data attribute
   document.querySelectorAll(".room-item").forEach(item => {
-    if (item.onclick.toString().includes(roomId)) {
+    if (item.dataset.roomId === roomId) {
       item.classList.add("active");
     }
   });
@@ -528,9 +529,10 @@ function handleRoomSearch() {
 function createSearchResultItem(roomId, room) {
   const searchRoomList = document.getElementById("search-room-list");
   const roomItem = document.createElement("div");
-  const isMemb = room.members && room.members[auth.currentUser.uid];
+  const isMember = room.members && room.members[auth.currentUser.uid];
   
   roomItem.className = `room-item search-result`;
+  roomItem.dataset.roomId = roomId;
   
   // Count members
   const memberCount = room.members ? Object.keys(room.members).length : 0;
@@ -541,7 +543,7 @@ function createSearchResultItem(roomId, room) {
       <div class="room-last-message">${room.description || "Không có mô tả"}</div>
       <div class="room-member-count">${memberCount} thành viên</div>
     </div>
-    ${isMemb ? 
+    ${isMember ? 
       `<button class="room-join-btn" onclick="switchToRoom('${roomId}', '${room.name}'); hideSearchResults();">Vào phòng</button>` :
       `<button class="room-join-btn" onclick="joinRoom('${roomId}', '${room.name}')">Tham gia</button>`
     }
