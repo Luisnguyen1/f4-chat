@@ -51,16 +51,33 @@
     </div>
 
     <div id="chat-section" class="hidden">
-      <h2>Xin chào, <span id="display-name"></span></h2>
-      <div class="chat-box" id="chat-box"></div>
-      <div id="mediaPreview"></div>
-      <div id="inputArea">
-        <button class="media-btn" onclick="document.getElementById('imageInput').click()" title="Gửi ảnh">📷</button>
-        <button class="media-btn" onclick="document.getElementById('videoInput').click()" title="Gửi video">🎥</button>
-        <input type="file" id="imageInput" multiple accept="image/*">
-        <input type="file" id="videoInput" accept="video/*">
-        <input type="text" id="chat-input" placeholder="Nhập tin nhắn..." />
-        <button onclick="sendMessage()">Gửi</button>
+      <div class="chat-header">
+        <button id="roomListToggle" class="menu-btn">☰</button>
+        <h2>Xin chào, <span id="display-name"></span></h2>
+        <span id="current-room-name">Room chung</span>
+      </div>
+      
+      <div class="chat-container">
+        <div id="room-sidebar" class="room-sidebar">
+          <div class="sidebar-header">
+            <h3>Danh sách Room</h3>
+            <button id="createRoomBtn" class="create-room-btn">+ Tạo Room</button>
+          </div>
+          <div id="room-list" class="room-list"></div>
+        </div>
+        
+        <div class="chat-main">
+          <div class="chat-box" id="chat-box"></div>
+          <div id="mediaPreview"></div>
+          <div id="inputArea">
+            <button class="media-btn" onclick="document.getElementById('imageInput').click()" title="Gửi ảnh">📷</button>
+            <button class="media-btn" onclick="document.getElementById('videoInput').click()" title="Gửi video">🎥</button>
+            <input type="file" id="imageInput" multiple accept="image/*">
+            <input type="file" id="videoInput" accept="video/*">
+            <input type="text" id="chat-input" placeholder="Nhập tin nhắn..." />
+            <button onclick="sendMessage()">Gửi</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>

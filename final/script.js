@@ -15,6 +15,10 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
+// Global variables
+let currentRoomId = "general";
+let currentUser = null;
+
 // DOM elements
 const loginForm = document.getElementById("login-form");
 const registerForm = document.getElementById("register-form");
@@ -69,6 +73,12 @@ document.getElementById("google-login").addEventListener("click", () => {
 function showChat() {
   document.getElementById("auth-section").classList.add("hidden");
   document.getElementById("chat-section").classList.remove("hidden");
+  currentUser = auth.currentUser;
+  
+  // Initialize room functionality
+  initializeRooms();
+  loadUserRooms();
+  setupRoomListeners();
 }
 
 // Send message function
@@ -84,12 +94,15 @@ function sendMessage() {
 
   // Send text message if exists
   if (text) {
-    db.ref("messages").push({
+    db.ref(`rooms/${currentRoomId}/messages`).push({
       name: auth.currentUser.displayName || auth.currentUser.email,
       text: text,
       uid: auth.currentUser.uid,
       timestamp: Date.now()
     });
+    
+    // Update room last message
+    updateRoomLastMessage(currentRoomId, text);
   }
 
   // Send images
@@ -116,13 +129,16 @@ async function sendImages(files) {
       const base64 = await toBase64(file);
       const imageUrl = await uploadToImgbb(base64);
       if (imageUrl) {
-        db.ref("messages").push({
+        db.ref(`rooms/${currentRoomId}/messages`).push({
           name: auth.currentUser.displayName || auth.currentUser.email,
           text: "",
           image: imageUrl,
           uid: auth.currentUser.uid,
           timestamp: Date.now()
         });
+        
+        // Update room last message
+        updateRoomLastMessage(currentRoomId, "📷 Hình ảnh");
       }
     } catch (error) {
       console.error("Error uploading image:", error);
@@ -139,13 +155,16 @@ async function sendVideos(files) {
       const videoUrl = await uploadVideo(file);
       hideUploadProgress();
       if (videoUrl) {
-        db.ref("messages").push({
+        db.ref(`rooms/${currentRoomId}/messages`).push({
           name: auth.currentUser.displayName || auth.currentUser.email,
           text: "",
           video: videoUrl,
           uid: auth.currentUser.uid,
           timestamp: Date.now()
         });
+        
+        // Update room last message
+        updateRoomLastMessage(currentRoomId, "🎥 Video");
       }
     } catch (error) {
       hideUploadProgress();
@@ -274,35 +293,171 @@ document.getElementById("chat-input").addEventListener("keydown", function(event
 
 // Listen for new messages
 const chatBox = document.getElementById("chat-box");
-db.ref("messages").on("child_added", snapshot => {
-  const msg = snapshot.val();
-  const div = document.createElement("div");
-  div.className = "message " + (msg.uid === auth.currentUser?.uid ? "mine" : "other");
-  
-  let content = `<strong>${msg.name}:</strong><br>`;
-  
-  // Add text if exists
-  if (msg.text) {
-    content += `<span>${msg.text}</span>`;
+let messagesListener = null;
+
+function listenToMessages() {
+  // Remove previous listener
+  if (messagesListener) {
+    messagesListener.off();
   }
   
-  // Add image if exists
-  if (msg.image) {
-    content += `<br><a href="${msg.image}" target="_blank">
-      <img src="${msg.image}" alt="Image" />
-    </a>`;
-  }
+  // Clear chat box
+  chatBox.innerHTML = "";
   
-  // Add video if exists
-  if (msg.video) {
-    content += `<br><video controls>
-      <source src="${msg.video}" type="video/mp4">
-      <source src="${msg.video}" type="video/webm">
-      Your browser does not support the video tag.
-    </video>`;
-  }
+  // Listen to current room messages
+  messagesListener = db.ref(`rooms/${currentRoomId}/messages`);
+  messagesListener.on("child_added", snapshot => {
+    const msg = snapshot.val();
+    const div = document.createElement("div");
+    div.className = "message " + (msg.uid === auth.currentUser?.uid ? "mine" : "other");
+    
+    let content = `<strong>${msg.name}:</strong><br>`;
+    
+    // Add text if exists
+    if (msg.text) {
+      content += `<span>${msg.text}</span>`;
+    }
+    
+    // Add image if exists
+    if (msg.image) {
+      content += `<br><a href="${msg.image}" target="_blank">
+        <img src="${msg.image}" alt="Image" />
+      </a>`;
+    }
+    
+    // Add video if exists
+    if (msg.video) {
+      content += `<br><video controls>
+        <source src="${msg.video}" type="video/mp4">
+        <source src="${msg.video}" type="video/webm">
+        Your browser does not support the video tag.
+      </video>`;
+    }
+    
+    div.innerHTML = content;
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  });
+}
+
+// Room management functions
+function initializeRooms() {
+  // Create general room if not exists
+  db.ref('rooms/general').once('value', snapshot => {
+    if (!snapshot.exists()) {
+      db.ref('rooms/general').set({
+        name: "Room chung",
+        description: "Phòng chat chung cho tất cả mọi người",
+        createdBy: auth.currentUser.uid,
+        createdAt: Date.now(),
+        members: {
+          [auth.currentUser.uid]: {
+            name: auth.currentUser.displayName || auth.currentUser.email,
+            joinedAt: Date.now()
+          }
+        }
+      });
+    } else {
+      // Add current user to general room if not already member
+      db.ref(`rooms/general/members/${auth.currentUser.uid}`).set({
+        name: auth.currentUser.displayName || auth.currentUser.email,
+        joinedAt: Date.now()
+      });
+    }
+  });
   
-  div.innerHTML = content;
-  chatBox.appendChild(div);
-  chatBox.scrollTop = chatBox.scrollHeight;
-});
+  // Switch to general room
+  switchToRoom("general", "Room chung");
+}
+
+function loadUserRooms() {
+  const roomList = document.getElementById("room-list");
+  
+  // Listen for rooms where user is a member
+  db.ref('rooms').on('value', snapshot => {
+    roomList.innerHTML = "";
+    const rooms = snapshot.val();
+    
+    if (rooms) {
+      Object.keys(rooms).forEach(roomId => {
+        const room = rooms[roomId];
+        if (room.members && room.members[auth.currentUser.uid]) {
+          createRoomListItem(roomId, room);
+        }
+      });
+    }
+  });
+}
+
+function createRoomListItem(roomId, room) {
+  const roomList = document.getElementById("room-list");
+  const roomItem = document.createElement("div");
+  roomItem.className = `room-item ${roomId === currentRoomId ? 'active' : ''}`;
+  roomItem.onclick = () => switchToRoom(roomId, room.name);
+  
+  roomItem.innerHTML = `
+    <div class="room-info">
+      <div class="room-name">${room.name}</div>
+      <div class="room-last-message">${room.lastMessage || "Chưa có tin nhắn"}</div>
+    </div>
+  `;
+  
+  roomList.appendChild(roomItem);
+}
+
+function switchToRoom(roomId, roomName) {
+  currentRoomId = roomId;
+  document.getElementById("current-room-name").textContent = roomName;
+  
+  // Update active room in UI
+  document.querySelectorAll(".room-item").forEach(item => {
+    item.classList.remove("active");
+  });
+  
+  // Find and activate current room
+  document.querySelectorAll(".room-item").forEach(item => {
+    if (item.onclick.toString().includes(roomId)) {
+      item.classList.add("active");
+    }
+  });
+  
+  // Load messages for this room
+  listenToMessages();
+}
+
+function updateRoomLastMessage(roomId, message) {
+  db.ref(`rooms/${roomId}/lastMessage`).set(message);
+  db.ref(`rooms/${roomId}/lastMessageTime`).set(Date.now());
+}
+
+function createRoom() {
+  const roomName = prompt("Nhập tên phòng chat:");
+  if (!roomName || !roomName.trim()) return;
+  
+  const roomId = 'room_' + Date.now();
+  db.ref(`rooms/${roomId}`).set({
+    name: roomName.trim(),
+    description: `Phòng chat ${roomName.trim()}`,
+    createdBy: auth.currentUser.uid,
+    createdAt: Date.now(),
+    members: {
+      [auth.currentUser.uid]: {
+        name: auth.currentUser.displayName || auth.currentUser.email,
+        joinedAt: Date.now()
+      }
+    }
+  }).then(() => {
+    switchToRoom(roomId, roomName.trim());
+  });
+}
+
+function setupRoomListeners() {
+  // Room list toggle
+  document.getElementById("roomListToggle").addEventListener("click", () => {
+    const sidebar = document.getElementById("room-sidebar");
+    sidebar.classList.toggle("show");
+  });
+  
+  // Create room button
+  document.getElementById("createRoomBtn").addEventListener("click", createRoom);
+}
