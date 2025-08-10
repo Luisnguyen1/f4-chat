@@ -17,6 +17,15 @@
       height: 100vh;
     }
 
+    header {
+      background: #4a76a8;
+      color: white;
+      display: flex;
+      align-items: center;
+      padding: 10px 15px;
+      font-size: 18px;
+    }
+
     #chatScreen {
       display: flex;
       flex-direction: column;
@@ -150,10 +159,71 @@
         font-size: 14px;
       }
     }
+
+    #menuBtn {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 15px;
+      margin-right: 1px;
+      cursor: pointer;
+    }
+    
+    .sidebar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 250px;
+      height: 100%;
+      background: #fff;
+      border-right: 1px solid #ccc;
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+      z-index: 1000;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+      padding: 10px;
+    }
+
+    .sidebar.show {
+      transform: translateX(0);
+    }
+
+    .container {
+      flex: 1;
+      display: flex;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chat-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .chat-list li {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+    }
+
+    .chat-list li:hover {
+      background: #f0f0f0;
+    }
   </style>
 </head>
 <body>
-
+  <header>
+    <button id="menuBtn" onclick="toggleSidebar()">☰</button>
+  </header>
+  <div class="container">
+    <div class="sidebar" id="sidebar">
+      <ul class="chat-list">
+        <li>s</li>
+        <li>s</li>
+      </ul>
+    </div>
+  </div>
   <div id="chatScreen">
     <div id="messages"></div>
     <div id="imagePreview"></div>
@@ -163,10 +233,11 @@
       <input type="file" id="imageInput" multiple accept="image/*">
       
       <div class="dropdown">
-        <button id="menuToggle">☰</button>
+        <button id="menuToggle">+</button>
         <div class="dropdown-menu" id="dropdownMenu">
           <button onclick="changeUsername()">✏️ Đổi tên</button>
           <button onclick="removeImage()">🧹 Xóa ảnh đã chọn</button>
+          <button onclick="sendVideo()">Gửi video</button>
         </div>
       </div>
 
@@ -191,7 +262,8 @@
     let username = "Guest";
 
     // Dropdown toggle
-    document.getElementById("menuToggle").addEventListener("click", () => {
+    document.getElementById("menuToggle").addEventListener("click", function(event) {
+      event.stopPropagation(); // Ngăn chặn sự kiện click lan truyền
       const menu = document.getElementById("dropdownMenu");
       menu.style.display = menu.style.display === "block" ? "none" : "block";
     });
@@ -340,6 +412,12 @@
     window.onload = function () {
       listenMessages();
     };
+
+    const menuBtn = document.getElementById('menuBtn');
+    const sidebar = document.getElementById('sidebar');
+    function toggleSidebar() {
+      sidebar.classList.toggle('show');
+    }
   </script>
 </body>
 </html>
