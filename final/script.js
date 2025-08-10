@@ -434,10 +434,12 @@ function createRoom() {
   const roomName = prompt("Nhập tên phòng chat:");
   if (!roomName || !roomName.trim()) return;
   
+  const roomDescription = prompt("Nhập mô tả phòng (tùy chọn):") || `Phòng chat ${roomName.trim()}`;
+  
   const roomId = 'room_' + Date.now();
   db.ref(`rooms/${roomId}`).set({
     name: roomName.trim(),
-    description: `Phòng chat ${roomName.trim()}`,
+    description: roomDescription.trim(),
     createdBy: auth.currentUser.uid,
     createdAt: Date.now(),
     members: {
@@ -448,6 +450,7 @@ function createRoom() {
     }
   }).then(() => {
     switchToRoom(roomId, roomName.trim());
+    alert(`Đã tạo phòng "${roomName.trim()}" thành công!`);
   });
 }
 
@@ -460,4 +463,125 @@ function setupRoomListeners() {
   
   // Create room button
   document.getElementById("createRoomBtn").addEventListener("click", createRoom);
+  
+  // Join room button
+  document.getElementById("joinRoomBtn").addEventListener("click", showJoinRoomDialog);
+  
+  // Room search functionality
+  const searchInput = document.getElementById("roomSearchInput");
+  searchInput.addEventListener("input", handleRoomSearch);
+  searchInput.addEventListener("focus", () => {
+    if (searchInput.value.trim()) {
+      document.getElementById("search-results").classList.remove("hidden");
+    }
+  });
+  
+  // Hide search results when clicking outside
+  document.addEventListener("click", (event) => {
+    const sidebar = document.getElementById("room-sidebar");
+    const searchResults = document.getElementById("search-results");
+    
+    if (!sidebar.contains(event.target)) {
+      searchResults.classList.add("hidden");
+    }
+  });
+}
+
+// Room search functionality
+function handleRoomSearch() {
+  const searchTerm = document.getElementById("roomSearchInput").value.trim().toLowerCase();
+  const searchResults = document.getElementById("search-results");
+  const searchRoomList = document.getElementById("search-room-list");
+  
+  if (!searchTerm) {
+    searchResults.classList.add("hidden");
+    return;
+  }
+  
+  searchResults.classList.remove("hidden");
+  searchRoomList.innerHTML = "";
+  
+  // Search all rooms in database
+  db.ref('rooms').once('value', snapshot => {
+    const rooms = snapshot.val();
+    let foundRooms = [];
+    
+    if (rooms) {
+      Object.keys(rooms).forEach(roomId => {
+        const room = rooms[roomId];
+        if (room.name && room.name.toLowerCase().includes(searchTerm)) {
+          foundRooms.push({ id: roomId, ...room });
+        }
+      });
+    }
+    
+    if (foundRooms.length === 0) {
+      searchRoomList.innerHTML = '<div class="no-results">Không tìm thấy phòng nào</div>';
+    } else {
+      foundRooms.forEach(room => {
+        createSearchResultItem(room.id, room);
+      });
+    }
+  });
+}
+
+function createSearchResultItem(roomId, room) {
+  const searchRoomList = document.getElementById("search-room-list");
+  const roomItem = document.createElement("div");
+  const isMemb = room.members && room.members[auth.currentUser.uid];
+  
+  roomItem.className = `room-item search-result`;
+  
+  // Count members
+  const memberCount = room.members ? Object.keys(room.members).length : 0;
+  
+  roomItem.innerHTML = `
+    <div class="room-info">
+      <div class="room-name">${room.name}</div>
+      <div class="room-last-message">${room.description || "Không có mô tả"}</div>
+      <div class="room-member-count">${memberCount} thành viên</div>
+    </div>
+    ${isMemb ? 
+      `<button class="room-join-btn" onclick="switchToRoom('${roomId}', '${room.name}'); hideSearchResults();">Vào phòng</button>` :
+      `<button class="room-join-btn" onclick="joinRoom('${roomId}', '${room.name}')">Tham gia</button>`
+    }
+  `;
+  
+  searchRoomList.appendChild(roomItem);
+}
+
+function joinRoom(roomId, roomName) {
+  // Add user to room members
+  db.ref(`rooms/${roomId}/members/${auth.currentUser.uid}`).set({
+    name: auth.currentUser.displayName || auth.currentUser.email,
+    joinedAt: Date.now()
+  }).then(() => {
+    // Switch to the joined room
+    switchToRoom(roomId, roomName);
+    hideSearchResults();
+    alert(`Đã tham gia phòng "${roomName}" thành công!`);
+  }).catch(error => {
+    console.error("Error joining room:", error);
+    alert("Lỗi khi tham gia phòng!");
+  });
+}
+
+function hideSearchResults() {
+  document.getElementById("search-results").classList.add("hidden");
+  document.getElementById("roomSearchInput").value = "";
+}
+
+function showJoinRoomDialog() {
+  const roomId = prompt("Nhập ID phòng muốn tham gia:");
+  if (!roomId || !roomId.trim()) return;
+  
+  // Check if room exists
+  db.ref(`rooms/${roomId}`).once('value', snapshot => {
+    if (snapshot.exists()) {
+      const room = snapshot.val();
+      joinRoom(roomId, room.name);
+    } else {
+      alert("Không tìm thấy phòng với ID này!");
+    }
+  });
 }

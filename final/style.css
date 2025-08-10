@@ -231,7 +231,26 @@ input[type="file"] {
   font-size: 16px;
 }
 
-.create-room-btn {
+.room-search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.room-search-input:focus {
+  outline: none;
+  border-color: #4CAF50;
+}
+
+.room-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.create-room-btn, .join-room-btn {
   background: #007bff;
   color: white;
   border: none;
@@ -239,11 +258,35 @@ input[type="file"] {
   border-radius: 5px;
   cursor: pointer;
   font-size: 12px;
-  width: 100%;
+  flex: 1;
+}
+
+.join-room-btn {
+  background: #28a745;
 }
 
 .create-room-btn:hover {
   background: #0056b3;
+}
+
+.join-room-btn:hover {
+  background: #1e7e34;
+}
+
+.search-results {
+  border-top: 1px solid #ddd;
+  margin-top: 10px;
+  padding-top: 10px;
+}
+
+.search-results h4 {
+  margin: 0 0 10px 10px;
+  font-size: 14px;
+  color: #666;
+}
+
+.search-results.hidden {
+  display: none;
 }
 
 .room-list {
@@ -296,6 +339,42 @@ input[type="file"] {
   padding: 2px 6px;
   font-size: 10px;
   margin-left: 5px;
+}
+
+.room-item.search-result {
+  border-left: 3px solid #007bff;
+}
+
+.room-item.search-result .room-info {
+  position: relative;
+}
+
+.room-join-btn {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-size: 10px;
+  cursor: pointer;
+  margin-left: 5px;
+}
+
+.room-join-btn:hover {
+  background: #1e7e34;
+}
+
+.room-member-count {
+  font-size: 11px;
+  color: #888;
+  margin-top: 2px;
+}
+
+.no-results {
+  padding: 20px;
+  text-align: center;
+  color: #666;
+  font-style: italic;
 }
 
 .chat-main {

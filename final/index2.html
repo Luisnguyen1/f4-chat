@@ -61,9 +61,17 @@
         <div id="room-sidebar" class="room-sidebar">
           <div class="sidebar-header">
             <h3>Danh sách Room</h3>
-            <button id="createRoomBtn" class="create-room-btn">+ Tạo Room</button>
+            <input type="text" id="roomSearchInput" placeholder="Tìm kiếm phòng..." class="room-search-input">
+            <div class="room-actions">
+              <button id="createRoomBtn" class="create-room-btn">+ Tạo Room</button>
+              <button id="joinRoomBtn" class="join-room-btn">Tham gia Room</button>
+            </div>
           </div>
           <div id="room-list" class="room-list"></div>
+          <div id="search-results" class="search-results hidden">
+            <h4>Kết quả tìm kiếm:</h4>
+            <div id="search-room-list" class="room-list"></div>
+          </div>
         </div>
         
         <div class="chat-main">
