@@ -1,0 +1,165 @@
+* {
+  box-sizing: border-box;
+  font-family: 'Roboto', sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #f0f2f5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.container {
+  width: 100%;
+  max-width: 500px;
+  background: white;
+  padding: 1rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.hidden { 
+  display: none; 
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+}
+
+input {
+  padding: 10px;
+  margin-top: 4px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+button {
+  padding: 10px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.chat-box {
+  height: 300px;
+  overflow-y: auto;
+  margin-bottom: 10px;
+  background: #f9f9f9;
+  padding: 10px;
+  border-radius: 6px;
+}
+
+.message {
+  margin: 5px 0;
+  max-width: 80%;
+  padding: 8px 12px;
+  border-radius: 12px;
+  clear: both;
+}
+
+.mine {
+  background-color: #d2f8d2;
+  float: right;
+}
+
+.other {
+  background-color: #f0d4d4;
+  float: left;
+}
+
+.switch {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.google-btn {
+  background-color: #4285f4;
+  margin-top: 5px;
+}
+
+/* Media upload styles */
+#inputArea {
+  display: flex;
+  padding: 10px;
+  background: #fff;
+  border-top: 1px solid #ccc;
+  gap: 8px;
+  align-items: center;
+}
+
+#inputArea input[type="text"] {
+  flex: 1;
+  padding: 10px;
+  border-radius: 20px;
+  border: 1px solid #ccc;
+}
+
+input[type="file"] {
+  display: none;
+}
+
+.media-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 50%;
+}
+
+.media-btn:hover {
+  background: #f0f0f0;
+}
+
+#mediaPreview {
+  padding: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  border-top: 1px solid #ccc;
+  background: #fafafa;
+}
+
+#mediaPreview img, #mediaPreview video {
+  max-width: 80px;
+  max-height: 80px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.message img {
+  max-width: 200px;
+  border-radius: 8px;
+  margin-top: 5px;
+}
+
+.message video {
+  max-width: 200px;
+  border-radius: 8px;
+  margin-top: 5px;
+}
+
+.upload-progress {
+  background: #e0e0e0;
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 5px 0;
+}
+
+.upload-progress-bar {
+  height: 20px;
+  background: #4CAF50;
+  transition: width 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 12px;
+}

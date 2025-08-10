@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chat App with Auth</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div class="container">
+    <div id="auth-section">
+      <h2 id="auth-title">Đăng nhập</h2>
+      <form id="login-form">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="login-email" required />
+        </div>
+        <div class="form-group">
+          <label>Mật khẩu</label>
+          <input type="password" id="login-password" required />
+        </div>
+        <button type="submit">Đăng nhập</button>
+        <button type="button" class="google-btn" id="google-login">Đăng nhập với Google</button>
+      </form>
+
+      <form id="register-form" class="hidden">
+        <div class="form-group">
+          <label>Tên tài khoản</label>
+          <input type="text" id="register-username" required />
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="register-email" required />
+        </div>
+        <div class="form-group">
+          <label>Mật khẩu</label>
+          <input type="password" id="register-password" required />
+        </div>
+        <button type="submit">Đăng ký</button>
+      </form>
+
+      <div class="switch">
+        <a href="#" id="toggle-auth">Chưa có tài khoản? Đăng ký</a>
+      </div>
+    </div>
+
+    <div id="chat-section" class="hidden">
+      <h2>Xin chào, <span id="display-name"></span></h2>
+      <div class="chat-box" id="chat-box"></div>
+      <div id="mediaPreview"></div>
+      <div id="inputArea">
+        <button class="media-btn" onclick="document.getElementById('imageInput').click()" title="Gửi ảnh">📷</button>
+        <button class="media-btn" onclick="document.getElementById('videoInput').click()" title="Gửi video">🎥</button>
+        <input type="file" id="imageInput" multiple accept="image/*">
+        <input type="file" id="videoInput" accept="video/*">
+        <input type="text" id="chat-input" placeholder="Nhập tin nhắn..." />
+        <button onclick="sendMessage()">Gửi</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+
+</html>
